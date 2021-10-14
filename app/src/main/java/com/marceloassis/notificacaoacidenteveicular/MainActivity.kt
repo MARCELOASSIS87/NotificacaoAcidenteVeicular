@@ -1,6 +1,7 @@
 package com.marceloassis.notificacaoacidenteveicular
 
 import android.Manifest
+import android.R
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
@@ -21,15 +23,19 @@ import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 import kotlin.properties.Delegates
 
-class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, EasyPermissions.RationaleCallbacks {
+class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, EasyPermissions.RationaleCallbacks, SensorEventListener {
     private lateinit var binding: ActivityMainBinding
 
     private val TAG = "MainActivity"
     private val LOCATION_PERM = 124
-    private var speedUpStartTime = 0L
+    /*private var speedUpStartTime = 0L
     private var speedUpEndTime = 0L
     private var speedDownStartTime = 0L
-    private var speedDownEndTime = 0L
+    private var speedDownEndTime = 0L*/
+    private lateinit var sensorManager: SensorManager
+    private lateinit var sensor: Sensor
+    private lateinit var sensorEventListener: SensorEventListener
+    //private lateinit var square: TextView
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
@@ -49,21 +55,34 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         askForLocationPermission()
         createLocationRequest()
+        //square = binding.grausTv
+
+        setUpSensorStuff()
 
         locationCallback = object : LocationCallback() {
 
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 if (!isDone){
-                    val speedToInt = locationResult.lastLocation.speed.toInt()
-                    calcSpeed(speedToInt)
+                    val speedToInt = ( locationResult.lastLocation.speed * 3.6).toInt()
+                    //calcSpeed(speedToInt)
                     binding.velocidadeTv.text = speedToInt.toString()
                 }
             }
         }
     }
+    private fun setUpSensorStuff(){
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also {
+            sensorManager.registerListener(
+                this,
+                it,
+                SensorManager.SENSOR_DELAY_NORMAL
+            )
+        }
+    }
 
-    private fun calcSpeed(speed: Int) {
+    /*private fun calcSpeed(speed: Int) {
 
         if (speed >= 10){
             speedUpStartTime=System.currentTimeMillis()
@@ -85,7 +104,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
             speedDownStartTime=System.currentTimeMillis()
         }
 
-    }
+    }*/
 
     override fun onResume() {
         super.onResume()
@@ -201,6 +220,24 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
 
     override fun onRationaleDenied(requestCode: Int) {
         TODO("Not yet implemented")
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if(event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
+            val inclinacao = event.values[0]*57
+            binding.grausTv.text = inclinacao.toString()
+
+
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        return
+    }
+
+    override fun onDestroy() {
+        sensorManager.unregisterListener(this)
+        super.onDestroy()
     }
 }
 
