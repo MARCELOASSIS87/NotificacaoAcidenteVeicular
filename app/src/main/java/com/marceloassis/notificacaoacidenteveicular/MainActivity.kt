@@ -224,8 +224,16 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
 
     override fun onSensorChanged(event: SensorEvent?) {
         if(event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
-            val inclinacao = event.values[0]*57
-            binding.grausTv.text = inclinacao.toString()
+            val xpart = event.values[1]
+            val zpart = event.values[2]
+
+            val inclinacao = event.values[0]
+            //Calculo necessário para que o retorno da variável values se torne graus
+            var magnetude = Math.sqrt((xpart*xpart + inclinacao*inclinacao + zpart*zpart).toDouble())
+            var cosTheta = inclinacao/magnetude
+            var thetaGraus = (Math.acos(cosTheta) * 180.0/Math.PI).toInt()
+            binding.grausTv.text = thetaGraus.toString()
+            //binding.grausTv.text = inclinacao.toString()
 
 
         }
