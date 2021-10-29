@@ -1,8 +1,7 @@
 package com.marceloassis.notificacaoacidenteveicular
 
 import android.Manifest
-import android.R
-import android.content.Context
+import android.Manifest.permission.CALL_PHONE
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -10,13 +9,14 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
+import android.net.Uri
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
-import android.view.View
-import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import com.google.android.gms.location.*
 import com.marceloassis.notificacaoacidenteveicular.databinding.ActivityMainBinding
 import pub.devrel.easypermissions.AppSettingsDialog
@@ -28,10 +28,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
 
     private val TAG = "MainActivity"
     private val LOCATION_PERM = 124
-    /*private var speedUpStartTime = 0L
-    private var speedUpEndTime = 0L
-    private var speedDownStartTime = 0L
-    private var speedDownEndTime = 0L*/
     private lateinit var sensorManager: SensorManager
     private lateinit var sensor: Sensor
     private lateinit var sensorEventListener: SensorEventListener
@@ -81,30 +77,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
             )
         }
     }
-
-    /*private fun calcSpeed(speed: Int) {
-
-        if (speed >= 10){
-            speedUpStartTime=System.currentTimeMillis()
-            speedDownEndTime=System.currentTimeMillis()
-
-            if (speedDownStartTime != 0L){
-                val speedDownTime=speedDownEndTime - speedUpStartTime
-                binding.testeTv.text = (speedDownTime/1000).toString()
-                speedDownStartTime=0L
-            }
-        }
-        else if (speed>=30){
-            if (speedUpStartTime!= 0L){
-                speedUpEndTime = System.currentTimeMillis()
-                val speedUpTime = speedUpEndTime - speedUpStartTime
-                binding.teste1030tv.text=(speedUpTime/1000).toString()
-                speedUpStartTime = 0L
-            }
-            speedDownStartTime=System.currentTimeMillis()
-        }
-
-    }*/
 
     override fun onResume() {
         super.onResume()
@@ -233,20 +205,48 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
             var cosTheta = inclinacao/magnetude
             var thetaGraus = (Math.acos(cosTheta) * 180.0/Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
-            //binding.grausTv.text = inclinacao.toString()
-
-
+            if (thetaGraus>=130){
+                ligar()
+            }
         }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        return
+        TODO("Not yet implemented")
     }
 
+    fun getPermissionCall(mainActivity: MainActivity): Boolean {
+        val REQUEST_PERMISSION_CALL = 221
+        var res = true
+        var string = "permissão nao obtida"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ActivityCompat.checkSelfPermission(this, CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                res = false
+                ActivityCompat.requestPermissions(this, arrayOf(CALL_PHONE), REQUEST_PERMISSION_CALL)
+            }
+        }
+        return res
+    }
+    fun ligar(){
+        if(getPermissionCall(this)){
+            val telefone = "035998870879"
+
+                val uri = Uri.parse("telefone:" + telefone)
+                val intent = Intent(Intent.ACTION_CALL,uri)
+            if (ActivityCompat.checkSelfPermission(this,Manifest.permission.CALL_PHONE)!= PackageManager.PERMISSION_GRANTED){
+                return
+            }
+            startActivity(intent)
+            }
+        }
     override fun onDestroy() {
         sensorManager.unregisterListener(this)
         super.onDestroy()
     }
-}
+    }
+
+
+
 
 
