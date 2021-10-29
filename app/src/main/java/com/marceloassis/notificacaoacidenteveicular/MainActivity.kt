@@ -9,14 +9,12 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
-import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import androidx.core.net.toUri
 import com.google.android.gms.location.*
 import com.marceloassis.notificacaoacidenteveicular.databinding.ActivityMainBinding
 import pub.devrel.easypermissions.AppSettingsDialog
@@ -205,48 +203,22 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
             var cosTheta = inclinacao/magnetude
             var thetaGraus = (Math.acos(cosTheta) * 180.0/Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
-            if (thetaGraus>=130){
-                ligar()
+            //binding.grausTv.text = inclinacao.toString()
+            if (thetaGraus>=120){
+                Toast.makeText(this,"Carro Tombou",Toast.LENGTH_LONG).show()
+
             }
         }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        TODO("Not yet implemented")
+        return
     }
 
-    fun getPermissionCall(mainActivity: MainActivity): Boolean {
-        val REQUEST_PERMISSION_CALL = 221
-        var res = true
-        var string = "permissão nao obtida"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ActivityCompat.checkSelfPermission(this, CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                res = false
-                ActivityCompat.requestPermissions(this, arrayOf(CALL_PHONE), REQUEST_PERMISSION_CALL)
-            }
-        }
-        return res
-    }
-    fun ligar(){
-        if(getPermissionCall(this)){
-            val telefone = "035998870879"
-
-                val uri = Uri.parse("telefone:" + telefone)
-                val intent = Intent(Intent.ACTION_CALL,uri)
-            if (ActivityCompat.checkSelfPermission(this,Manifest.permission.CALL_PHONE)!= PackageManager.PERMISSION_GRANTED){
-                return
-            }
-            startActivity(intent)
-            }
-        }
     override fun onDestroy() {
         sensorManager.unregisterListener(this)
         super.onDestroy()
     }
-    }
-
-
-
+}
 
 
