@@ -9,6 +9,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
+import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -19,6 +20,7 @@ import com.google.android.gms.location.*
 import com.marceloassis.notificacaoacidenteveicular.databinding.ActivityMainBinding
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
+import java.lang.System.out
 import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, EasyPermissions.RationaleCallbacks, SensorEventListener {
@@ -204,11 +206,21 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
             var thetaGraus = (Math.acos(cosTheta) * 180.0/Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
             //binding.grausTv.text = inclinacao.toString()
-            if (thetaGraus>=120){
-                Toast.makeText(this,"Carro Tombou",Toast.LENGTH_LONG).show()
-
+            if (thetaGraus>=130 || thetaGraus<=-130){
+                Toast.makeText(this,"Fazendo chamda de emergencia",Toast.LENGTH_LONG).show()
+                //ligar()
             }
         }
+    }
+    fun ligar(){
+        val numero = "035998870879"
+        val uri = Uri.parse("tel:" + numero)
+        intent = Intent(Intent.ACTION_CALL,uri)
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, Array<String>(1){Manifest.permission.CALL_PHONE},1)
+            return
+        }
+        startActivity(intent)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
