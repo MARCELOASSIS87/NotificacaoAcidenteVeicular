@@ -2,5 +2,5 @@
     <string name="app_name">Notificacao Acidente Veicular</string>
     <string name="iniciar_monitoramento">Iniciar Monitoramento</string>
     <string name="velocidade_no_momento">Velocidade no Momento</string>
-    <string name="Teste">Teste</string>
+    <string name="PararMonitoramento">Parar Monitoramento</string>
 </resources>
