@@ -1,8 +1,6 @@
 package com.marceloassis.notificacaoacidenteveicular
 
 import android.Manifest
-import android.Manifest.permission.CALL_PHONE
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -10,24 +8,31 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
-import android.location.LocationManager
+import android.location.LocationListener
 import android.net.Uri
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.android.volley.Request
+import com.android.volley.toolbox.StringRequest
+import com.google.android.gms.common.api.Response
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
+import com.google.gson.Gson
 import com.marceloassis.notificacaoacidenteveicular.databinding.ActivityMainBinding
+import org.jetbrains.anko.doAsync
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
-import java.lang.System.out
+import java.lang.NullPointerException
+import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
-class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, EasyPermissions.RationaleCallbacks, SensorEventListener, LocationListener {
+class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
+    EasyPermissions.RationaleCallbacks, SensorEventListener,
+    LocationListener {
     private lateinit var binding: ActivityMainBinding
 
     private val TAG = "MainActivity"
@@ -60,63 +65,96 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
 
         locationCallback = object : LocationCallback() {
 
-            override fun onLocationResult(locationResult: LocationResult?) {
-                locationResult ?: return
-                if (!isDone){
-                    val speedToInt = ( locationResult.lastLocation.speed * 3.6).toInt()
+            override fun onLocationResult(locationResult: LocationResult) {
+
+                if (!isDone) {
+                    val speedToInt = (locationResult.lastLocation.speed * 3.6).toInt()
                     binding.velocidadeTv.text = speedToInt.toString()
-               }
+
+                }
             }
         }
     }
+
+
     override fun onSensorChanged(event: SensorEvent?) {
-        if(event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
             val xpart = event.values[1]
             val zpart = event.values[2]
 
             val inclinacao = event.values[0]
             //Calculo necessário para que o retorno da variável values se torne graus
-            var magnetude = Math.sqrt((xpart*xpart + inclinacao*inclinacao + zpart*zpart).toDouble())
-            var cosTheta = inclinacao/magnetude
-            var thetaGraus = (Math.acos(cosTheta) * 180.0/Math.PI).toInt()
+            var magnetude =
+                Math.sqrt((xpart * xpart + inclinacao * inclinacao + zpart * zpart).toDouble())
+            var cosTheta = inclinacao / magnetude
+            var thetaGraus = (Math.acos(cosTheta) * 180.0 / Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
-            if (thetaGraus>=130 || thetaGraus<=-130){
-                Toast.makeText(this,"Fazendo chamda de emergencia",Toast.LENGTH_LONG).show()
-                ligar()
-                //enviarInformacao()
+            if (thetaGraus >= 130 || thetaGraus <= -30) {
+                //Toast.makeText(this, "Fazendo chamda de emergencia", Toast.LENGTH_LONG).show()
+                //ligar()
+                enviarInformacao()
             }
         }
-    }fun pararMonitoramento(view: View){
+    }
+
+    fun pararMonitoramento(view: View) {
         finish()
     }
+
     fun enviarInformacao() {
+        fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
+            var location: Location? = task.result
+            if (location != null) {
+                var latiLong = "Latitude:" + location.latitude + "\nLongitude: " + location.longitude
+//
 
-        val sendIntent: Intent = Intent().apply {
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_TEXT, "Aqui seria a localização")
-            type = "text/plain"
-            `package` = "com.whatsapp"
-        }
-        Toast.makeText(this,"Aqui vai a localização",Toast.LENGTH_LONG).show()
-        val shareIntent = Intent.createChooser(sendIntent, null)
-        startActivity(shareIntent)
+                binding.laslocationTV.text = latiLong
+//                val sendIntent: Intent = Intent().apply {
+//                    action = Intent.ACTION_SEND
+//                    putExtra(Intent.EXTRA_TEXT, "Aqui é a localização: $latiLong")
+//                    type = "text/plain"
+//                    `package` = ""                }
+                Toast.makeText(this, "Aqui vai a localização $latiLong", Toast.LENGTH_LONG).show()
+//                val shareIntent = Intent.createChooser(sendIntent, null)
+//                startActivity(shareIntent)
+                val gson = Gson()
+                val latlongJson = gson.toJson(latiLong)
+
+                doAsync {
+                    val http = HttpHelper()
+                    http.post(latlongJson)
+                }
+
+                println(latlongJson)
+            }
         }
 
-    fun ligar(){
+    }
+
+    fun ligar() {
         val numero = "035998972008" //filinha
         val uri = Uri.parse("tel:" + numero)
-        intent = Intent(Intent.ACTION_CALL,uri)
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
+        intent = Intent(Intent.ACTION_CALL, uri)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CALL_PHONE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             return
         }
         startActivity(intent)
     }
 
-    fun permissaoChamadaTelefonica(){
-        ActivityCompat.requestPermissions(this, Array<String>(1){Manifest.permission.CALL_PHONE},1)
+    fun permissaoChamadaTelefonica() {
+        ActivityCompat.requestPermissions(
+            this,
+            Array<String>(1) { Manifest.permission.CALL_PHONE },
+            1
+        )
         return
     }
-    private fun setUpSensorStuff(){
+
+    private fun setUpSensorStuff() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also {
             sensorManager.registerListener(
@@ -157,8 +195,9 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
 
     private fun createLocationRequest() {
         locationRequest = LocationRequest.create().apply {
-            interval = 1000
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            val interval = 1000
+            var priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
         }
     }
 
@@ -187,10 +226,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
             )
         }
     }
+
     private fun hasLocationPermission(): Boolean {
         return EasyPermissions.hasPermissions(
             this,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
+            Manifest.permission.ACCESS_FINE_LOCATION
         )
     }
 
@@ -200,21 +240,21 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode,permissions,grantResults,this)
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
     }
 
     override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        if (EasyPermissions.somePermissionPermanentlyDenied(this,perms)){
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
             AppSettingsDialog.Builder(this).build().show()
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode==AppSettingsDialog.DEFAULT_SETTINGS_REQ_CODE){
-            val yes="Permitido"
+        if (requestCode == AppSettingsDialog.DEFAULT_SETTINGS_REQ_CODE) {
+            val yes = "Permitido"
             val no = "Negado"
-            Toast.makeText(this,"onActivityResult",Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "onActivityResult", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -244,6 +284,15 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks, E
 
 
 }
+
+private fun FusedLocationProviderClient.requestLocationUpdates(
+    locationRequest: LocationRequest,
+    locationCallback: LocationCallback,
+    mainLooper: Looper?
+) {
+
+}
+
 
 
 
