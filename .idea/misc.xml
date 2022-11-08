@@ -6,6 +6,7 @@
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.25" />
         <entry key="app/src/main/res/layout/lista_sensores.xml" value="0.1361111111111111" />
         <entry key="app/src/main/res/layout/tela_inicial.xml" value="0.25" />
+        <entry key="app/src/main/res/xml/network_security.xml" value="0.1" />
       </map>
     </option>
   </component>

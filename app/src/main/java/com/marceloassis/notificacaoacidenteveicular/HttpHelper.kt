@@ -14,13 +14,13 @@ class HttpHelper {
     fun post (json:String) : String{
 
         //Definir URL server
-        val URL = ""
+        val URL = "http://192.168.1.10:8080/alert"
         //cabecalho
         val headerHttp = "application/json; charset=utf-8".toMediaType()
         //client
         val client = OkHttpClient()
         // criar o  body
-        val body = json.toString().toRequestBody(headerHttp)
+        val body = json.toRequestBody(headerHttp)
         //construi a requisisção
         var request = Request.Builder().url(URL).post(body).build()
 
@@ -28,5 +28,20 @@ class HttpHelper {
 
         return response.body.toString()
     }
+    fun get (){
+        //Definir URL server
+        val URL = "http://192.168.1.10:8080/alert"
+        //cabecalho
+        val headerHttp = "application/json; charset=utf-8".toMediaType()
+        //client
+        val client = OkHttpClient()
+        // criar o  body
+        val body = headerHttp.toString()
+        //construi a requisisção
+        var request = Request.Builder().url(URL).get().build()
 
+        val response = client.newCall(request).execute()
+        println(response)
+
+    }
 }

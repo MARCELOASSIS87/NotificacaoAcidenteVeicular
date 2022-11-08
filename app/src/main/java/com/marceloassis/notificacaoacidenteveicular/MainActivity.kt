@@ -105,26 +105,29 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
         fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
             var location: Location? = task.result
             if (location != null) {
-                var latiLong = "Latitude:" + location.latitude + "\nLongitude: " + location.longitude
-//
-
-                binding.laslocationTV.text = latiLong
-//                val sendIntent: Intent = Intent().apply {
-//                    action = Intent.ACTION_SEND
-//                    putExtra(Intent.EXTRA_TEXT, "Aqui é a localização: $latiLong")
-//                    type = "text/plain"
-//                    `package` = ""                }
-                Toast.makeText(this, "Aqui vai a localização $latiLong", Toast.LENGTH_LONG).show()
-//                val shareIntent = Intent.createChooser(sendIntent, null)
-//                startActivity(shareIntent)
+                var latiLong =
+                    "latitude: " + location.latitude +
+                    "," +
+                    "longitude: " + location.longitude
                 val gson = Gson()
                 val latlongJson = gson.toJson(latiLong)
 
+
+                binding.laslocationTV.text = latiLong
+                val sendIntent: Intent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, "Aqui é a localização: $latlongJson")
+                    type = "text/plain"
+                    `package` = "com.whatsapp"                }
+                Toast.makeText(this, "Aqui vai a localização $latlongJson", Toast.LENGTH_LONG).show()
+                val shareIntent = Intent.createChooser(sendIntent, null)
+                startActivity(shareIntent)
+
+
                 doAsync {
                     val http = HttpHelper()
-                    http.post(latlongJson)
+                    http.get()
                 }
-
                 println(latlongJson)
             }
         }
