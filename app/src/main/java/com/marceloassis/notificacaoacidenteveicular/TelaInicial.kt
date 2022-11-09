@@ -14,9 +14,17 @@ class TelaInicial : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this,R.layout.tela_inicial)
     }
+
     fun chamaTelaInicial(view: View) {
-        val intent = Intent(this,MainActivity::class.java).apply {  }
+        val nome = binding.editTextTextPersonName.text.toString()
+        val sobrenome = binding.editTextTextPersonlastName.text.toString()
+        val intent = Intent(this,MainActivity::class.java).apply {
+
+        }
+        intent.putExtra("nome", "${nome}")
+        intent.putExtra("sobrenome", "${sobrenome}")
         startActivity(intent)
+
     }
 
 

@@ -22,6 +22,7 @@ import com.google.android.gms.common.api.Response
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.marceloassis.notificacaoacidenteveicular.databinding.ActivityMainBinding
 import org.jetbrains.anko.doAsync
 import pub.devrel.easypermissions.AppSettingsDialog
@@ -29,6 +30,7 @@ import pub.devrel.easypermissions.EasyPermissions
 import java.lang.NullPointerException
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
+
 
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
     EasyPermissions.RationaleCallbacks, SensorEventListener,
@@ -56,6 +58,9 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val nomeCadastrado = intent?.extras?.getString("nome").toString()
+        val sobrenomeCadastrado = intent?.extras?.getString("sobrenome").toString()
+        binding.laslocationTV.text = nomeCadastrado + sobrenomeCadastrado
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         askForLocationPermission()
         permissaoChamadaTelefonica()
@@ -76,7 +81,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
         }
     }
 
-
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
             val xpart = event.values[1]
@@ -89,7 +93,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
             var cosTheta = inclinacao / magnetude
             var thetaGraus = (Math.acos(cosTheta) * 180.0 / Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
-            if (thetaGraus >= 130 || thetaGraus <= -30) {
+            if (thetaGraus >= 130 || thetaGraus <= 30) {
                 //Toast.makeText(this, "Fazendo chamda de emergencia", Toast.LENGTH_LONG).show()
                 //ligar()
                 enviarInformacao()
@@ -103,36 +107,39 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
 
     fun enviarInformacao() {
         fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
-            var location: Location? = task.result
+            var location: Location = task.result
+            val gson = Gson()
+            val gsonPretty = GsonBuilder().setPrettyPrinting().create()
+            val latlong = UserData("Marcelo", "Assis", location.latitude , location.longitude )
+
+
             if (location != null) {
-                var latiLong =
-                    "latitude: " + location.latitude +
-                    "," +
-                    "longitude: " + location.longitude
-                val gson = Gson()
-                val latlongJson = gson.toJson(latiLong)
+                //Aqui será o post
+            }
+            val jsonLatLong: String = gson.toJson(latlong)
+            println(jsonLatLong)
 
+            val jsonLatLongPretty: String = gsonPretty.toJson(latlong)
+            println(jsonLatLongPretty)
+                //binding.laslocationTV.text = jsonLatLong
+//                val sendIntent: Intent = Intent().apply {
+//                    action = Intent.ACTION_SEND
+//                    putExtra(Intent.EXTRA_TEXT, "localização em json: $jsonLatLongPretty")
+//                    type = "text/plain"
+//                    `package` = "com.whatsapp"                }
+                Toast.makeText(this, "Aqui vai a o nome ", Toast.LENGTH_SHORT).show()
+//                val shareIntent = Intent.createChooser(sendIntent, null)
+//                startActivity(shareIntent)
 
-                binding.laslocationTV.text = latiLong
-                val sendIntent: Intent = Intent().apply {
-                    action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_TEXT, "Aqui é a localização: $latlongJson")
-                    type = "text/plain"
-                    `package` = "com.whatsapp"                }
-                Toast.makeText(this, "Aqui vai a localização $latlongJson", Toast.LENGTH_LONG).show()
-                val shareIntent = Intent.createChooser(sendIntent, null)
-                startActivity(shareIntent)
-
-
-                doAsync {
-                    val http = HttpHelper()
-                    http.get()
-                }
-                println(latlongJson)
+//                doAsync {
+//                    val http = HttpHelper()
+//                    http.get()
+//                }
+                println(jsonLatLong)
             }
         }
 
-    }
+
 
     fun ligar() {
         val numero = "035998972008" //filinha
@@ -295,6 +302,7 @@ private fun FusedLocationProviderClient.requestLocationUpdates(
 ) {
 
 }
+
 
 
 
