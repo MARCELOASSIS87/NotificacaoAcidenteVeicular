@@ -58,9 +58,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val nomeCadastrado = intent?.extras?.getString("nome").toString()
-        val sobrenomeCadastrado = intent?.extras?.getString("sobrenome").toString()
-        binding.laslocationTV.text = nomeCadastrado + sobrenomeCadastrado
+
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         askForLocationPermission()
         permissaoChamadaTelefonica()
@@ -94,8 +92,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
             var thetaGraus = (Math.acos(cosTheta) * 180.0 / Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
             if (thetaGraus >= 130 || thetaGraus <= 30) {
-                //Toast.makeText(this, "Fazendo chamda de emergencia", Toast.LENGTH_LONG).show()
-                //ligar()
                 enviarInformacao()
             }
         }
@@ -108,19 +104,23 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
     fun enviarInformacao() {
         fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
             var location: Location = task.result
+            val nomeCadastrado = intent?.extras?.getString("nome").toString()
+            val sobrenomeCadastrado = intent?.extras?.getString("sobrenome").toString()
+            binding.laslocationTV.text = nomeCadastrado + sobrenomeCadastrado
             val gson = Gson()
             val gsonPretty = GsonBuilder().setPrettyPrinting().create()
-            val latlong = UserData("Marcelo", "Assis", location.latitude , location.longitude )
-
+            val latlong = UserData(nomeCadastrado, sobrenomeCadastrado, location.latitude , location.longitude )
+            val jsonLatLong: String = gson.toJson(latlong)
+            val jsonLatLongPretty: String = gsonPretty.toJson(latlong)
 
             if (location != null) {
                 //Aqui será o post
+                doAsync {
+                    val http = HttpHelper()
+                    http.post(jsonLatLong)
+                }
             }
-            val jsonLatLong: String = gson.toJson(latlong)
-            println(jsonLatLong)
 
-            val jsonLatLongPretty: String = gsonPretty.toJson(latlong)
-            println(jsonLatLongPretty)
                 //binding.laslocationTV.text = jsonLatLong
 //                val sendIntent: Intent = Intent().apply {
 //                    action = Intent.ACTION_SEND
@@ -131,16 +131,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
 //                val shareIntent = Intent.createChooser(sendIntent, null)
 //                startActivity(shareIntent)
 
-//                doAsync {
-//                    val http = HttpHelper()
-//                    http.get()
-//                }
-                println(jsonLatLong)
+
+
             }
         }
-
-
-
     fun ligar() {
         val numero = "035998972008" //filinha
         val uri = Uri.parse("tel:" + numero)
