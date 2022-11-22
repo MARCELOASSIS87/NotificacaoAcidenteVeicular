@@ -16,19 +16,31 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.android.volley.Request
-import com.android.volley.toolbox.StringRequest
 import com.google.android.gms.common.api.Response
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.HttpRequest
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.client.HttpClient
+import com.google.firebase.firestore.util.Listener
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.marceloassis.notificacaoacidenteveicular.databinding.ActivityMainBinding
+import com.marceloassis.notificacaoacidenteveicular.http.HttpHelper
+import com.marceloassis.notificacaoacidenteveicular.model.User
 import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.doAsyncResult
+import org.json.JSONException
+import org.json.JSONObject
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
+import java.io.BufferedReader
+import java.io.DataOutputStream
+import java.io.InputStreamReader
 import java.lang.NullPointerException
+import java.net.HttpURLConnection
+import java.net.URL
 import javax.microedition.khronos.opengles.GL10
+import kotlin.concurrent.thread
 import kotlin.properties.Delegates
 
 
@@ -58,7 +70,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         askForLocationPermission()
         permissaoChamadaTelefonica()
@@ -71,7 +82,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
             override fun onLocationResult(locationResult: LocationResult) {
 
                 if (!isDone) {
-                    val speedToInt = (locationResult.lastLocation.speed * 3.6).toInt()
+                    val speedToInt = (locationResult.lastLocation!!.speed * 3.6).toInt()
                     binding.velocidadeTv.text = speedToInt.toString()
 
                 }
@@ -91,50 +102,49 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks,
             var cosTheta = inclinacao / magnetude
             var thetaGraus = (Math.acos(cosTheta) * 180.0 / Math.PI).toInt()
             binding.grausTv.text = thetaGraus.toString()
-            if (thetaGraus >= 130 || thetaGraus <= 30) {
+            if (thetaGraus >= 130 && thetaGraus <= 140) {
                 enviarInformacao()
+                println("Dentro do if do thetha")
             }
         }
     }
 
-    fun pararMonitoramento(view: View) {
+    fun pararMonitoramento() {
         finish()
     }
 
     fun enviarInformacao() {
+        val nomeCadastrado = intent?.extras?.getString("nome").toString()
+        val sobrenomeCadastrado = intent?.extras?.getString("sobrenome").toString()
+        val gson = Gson()
+
+
         fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
             var location: Location = task.result
-            val nomeCadastrado = intent?.extras?.getString("nome").toString()
-            val sobrenomeCadastrado = intent?.extras?.getString("sobrenome").toString()
-            binding.laslocationTV.text = nomeCadastrado + sobrenomeCadastrado
-            val gson = Gson()
-            val gsonPretty = GsonBuilder().setPrettyPrinting().create()
-            val latlong = UserData(nomeCadastrado, sobrenomeCadastrado, location.latitude , location.longitude )
-            val jsonLatLong: String = gson.toJson(latlong)
-            val jsonLatLongPretty: String = gsonPretty.toJson(latlong)
-
-            if (location != null) {
-                //Aqui será o post
-                doAsync {
-                    val http = HttpHelper()
-                    http.post(jsonLatLong)
-                }
+            val usuario = User()
+            usuario.name = nomeCadastrado
+            usuario.lastname = sobrenomeCadastrado
+            usuario.latitude = location.latitude
+            usuario.longitude = location.longitude
+            val userJson = gson.toJson(usuario)
+            doAsync{
+                val http = HttpHelper()
+                http.post(userJson)
+                println("###################" + userJson)
             }
-
-                //binding.laslocationTV.text = jsonLatLong
-//                val sendIntent: Intent = Intent().apply {
-//                    action = Intent.ACTION_SEND
-//                    putExtra(Intent.EXTRA_TEXT, "localização em json: $jsonLatLongPretty")
-//                    type = "text/plain"
-//                    `package` = "com.whatsapp"                }
-                Toast.makeText(this, "Aqui vai a o nome ", Toast.LENGTH_SHORT).show()
-//                val shareIntent = Intent.createChooser(sendIntent, null)
-//                startActivity(shareIntent)
-
-
-
-            }
+//            fun thread() {
+//                val thread = Thread(
+//                    Runnable {
+//                        val http = HttpHelper()
+//                            http.post(userJson)
+//                            println("###################" + userJson)
+//                    }
+//                )
+//                thread.start()
+//            }
         }
+    }
+
     fun ligar() {
         val numero = "035998972008" //filinha
         val uri = Uri.parse("tel:" + numero)
@@ -293,9 +303,7 @@ private fun FusedLocationProviderClient.requestLocationUpdates(
     locationRequest: LocationRequest,
     locationCallback: LocationCallback,
     mainLooper: Looper?
-) {
-
-}
+) {}
 
 
 
